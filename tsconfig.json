@@ -1,0 +1,31 @@
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"module": "esnext",
+		"lib": ["esnext", "dom"],
+		"moduleResolution": "node",
+		"esModuleInterop": true,
+		"strict": true,
+		"strictNullChecks": true,
+		"noImplicitAny": true,
+		"noImplicitThis": true,
+		"resolveJsonModule": true,
+		"skipDefaultLibCheck": true,
+		"skipLibCheck": true,
+		"declaration": true,
+		"sourceMap": true,
+		"forceConsistentCasingInFileNames": true
+	},
+	"include": [
+		"./config/vitest/svelteSetup.ts",
+		"./typings.d.ts",
+		"./src/*.ts",
+		"./src/**/*.ts",
+		"./src/**/*.svelte",
+		"./src/**/*.ts",
+		"./src/**/*.svelte",
+		"./tests/**/*.ts",
+		"./tests/**/*.svelte"
+	],
+	"exclude": ["**/dist/**"]
+}

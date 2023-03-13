@@ -1,0 +1,41 @@
+{
+	"name": "pearl",
+	"version": "1.0.0",
+	"description": "",
+	"type": "module",
+	"main": "index.js",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"serve": "vite preview",
+		"lint": "prettier --plugin-search-dir . --check . && eslint .",
+		"format": "prettier --plugin-search-dir . --write .",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "^2.0.3",
+		"@testing-library/dom": "^9.0.1",
+		"@testing-library/jest-dom": "^5.16.5",
+		"@testing-library/svelte": "^3.2.2",
+		"@testing-library/user-event": "^14.4.3",
+		"@types/testing-library__jest-dom": "^5.14.5",
+		"@typescript-eslint/parser": "^5.54.0",
+		"eslint": "^8.35.0",
+		"jsdom": "^21.1.1",
+		"prettier": "^2.8.4",
+		"prettier-plugin-svelte": "^2.9.0",
+		"svelte": "^3.55.1",
+		"svelte-preprocess": "^5.0.1",
+		"typescript": "^4.9.5",
+		"vite": "^4.1.4",
+		"vitest": "^0.29.2"
+	},
+	"dependencies": {
+		"canvas-sketch-util": "^1.10.0",
+		"picogl": "^0.17.9"
+	}
+}
