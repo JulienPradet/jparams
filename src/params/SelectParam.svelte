@@ -4,13 +4,14 @@
 
 	type T = $$Generic;
 	type ActualSelectParam = T extends SelectParam<infer Option> ? SelectParam<Option> : never;
+	type Option = Required<ActualSelectParam>['value'];
 
 	export let name: string;
 	export let param: InitialiazedParam<ActualSelectParam>;
 	export let disabled: boolean = false;
+	export let value: Option;
 
 	let select: HTMLSelectElement;
-	let value = param.value;
 
 	function onChange(event: Event & { currentTarget: EventTarget & HTMLSelectElement }) {
 		const newValue = event.currentTarget.value;

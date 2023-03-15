@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { SvelteComponentTyped } from 'svelte/internal';
+	import { afterUpdate, SvelteComponentTyped } from 'svelte/internal';
 	import { createEventDispatcher, onMount, tick } from 'svelte';
+	import { getLock$ } from './lockContext';
 
 	export let name: string;
 	export let label: string;
@@ -16,17 +17,16 @@
 		localStorage.setItem(localStorageOpenedKey, JSON.stringify(opened));
 	}
 
-	const localStorageLockedKey = `params_inputrenderer_locked_${name}`;
-	let disabled = Boolean(JSON.parse(localStorage.getItem(localStorageLockedKey) || 'false'));
-	localStorage.setItem(localStorageLockedKey, JSON.stringify(disabled));
+	let lock = getLock$(name);
 
 	function onLockToggle() {
-		disabled = !disabled;
-		if (disabled) {
+		$lock = !$lock;
+
+		if ($lock) {
 			opened = false;
-			localStorage.setItem(localStorageOpenedKey, JSON.stringify(opened));
+		} else {
+			opened = true;
 		}
-		localStorage.setItem(localStorageLockedKey, JSON.stringify(disabled));
 	}
 
 	type C = $$Generic<typeof SvelteComponentTyped<any, any, any>>;
@@ -35,14 +35,24 @@
 		props: C extends typeof SvelteComponentTyped<infer P extends Record<string, any>> ? P : never;
 	};
 
-	const dispatch = createEventDispatcher<{ ready: string; reset: string }>();
+	let value = props.props.param.value;
+	let previousValue = value;
+
+	const dispatch = createEventDispatcher<{ ready: string; update: any }>();
 
 	onMount(() => {
 		dispatch('ready', name);
 	});
+
+	afterUpdate(() => {
+		if (value !== previousValue) {
+			dispatch('update', value);
+			previousValue = value;
+		}
+	});
 </script>
 
-<div class={`row ${opened ? 'opened' : ''} ${disabled ? 'disabled' : ''}`}>
+<div class={`row ${opened ? 'opened' : ''} ${$lock ? 'disabled' : ''}`}>
 	<div class="label-row">
 		<button
 			type="button"
@@ -58,12 +68,19 @@
 			class="lock"
 			type="button"
 			on:click={onLockToggle}
-			title={disabled ? 'Unlock' : 'Lock'}
+			title={$lock ? 'Unlock' : 'Lock'}
+			aria-label={$lock ? 'Unlock' : 'Lock'}
 		/>
 	</div>
 	{#if opened}
 		<div class="input">
-			<svelte:component this={props.component} {...props.props} {disabled} bind:onReset />
+			<svelte:component
+				this={props.component}
+				{...props.props}
+				disabled={$lock}
+				bind:value
+				bind:onReset
+			/>
 		</div>
 	{/if}
 </div>

@@ -1,51 +1,12 @@
 <script lang="ts">
-	import { afterUpdate, createEventDispatcher } from 'svelte';
-
 	export let label: string;
 	export let value: string;
 	export let name: string;
 	export let disabled: boolean = false;
-
-	let input: HTMLTextAreaElement;
-	let previouslySentValue: string = value;
-
-	const dispatch = createEventDispatcher();
-
-	function dispatchChange(value: string) {
-		dispatch('change', {
-			value: value
-		});
-		input.closest('form')?.dispatchEvent(
-			new CustomEvent('programmaticChange', {
-				bubbles: true,
-				cancelable: true
-			})
-		);
-	}
-
-	function onChange(event: { currentTarget: EventTarget & HTMLTextAreaElement }) {
-		dispatchChange(event.currentTarget.value);
-	}
-
-	afterUpdate(() => {
-		if (input.value !== previouslySentValue) {
-			previouslySentValue = input.value;
-			dispatchChange(previouslySentValue);
-		}
-	});
 </script>
 
 <label class="screen-reader" for={name}>{label}</label>
-<textarea
-	{...$$props}
-	{disabled}
-	{name}
-	id={name}
-	on:keyup={disabled ? () => {} : onChange}
-	on:change={disabled ? () => {} : onChange}
-	bind:this={input}
-	bind:value
-/>
+<textarea {...$$props} {disabled} {name} id={name} bind:value />
 
 <style>
 	textarea {

@@ -60,8 +60,14 @@ if (!paramsContainer) {
 const paramsComponent = new Params({
 	target: paramsContainer,
 	props: {
-        random,
-		params
+		random,
+		params,
+		getInitialLockState: (name) => {
+			return Boolean(JSON.parse(localStorage.getItem(`params_${name}_locked`) || 'false'));
+		},
+		onLockUpdate: (name, isLocked) => {
+			localStorage.setItem(`params_${name}_locked`, JSON.stringify(isLocked));
+		}
 	}
 });
 

@@ -3,6 +3,9 @@
 	import { afterUpdate, beforeUpdate, createEventDispatcher, onDestroy, onMount } from 'svelte';
 	import { throttle } from '../util/throttle';
 
+	export let name: string;
+	export let label: string;
+	export let prefix: string = '';
 	export let value: string;
 	export let maxPrecision: number = 10;
 	export let disabled: boolean = false;
@@ -11,8 +14,6 @@
 	let clickTarget: HTMLSpanElement;
 	let wrapper: HTMLElement;
 	let dragging: boolean = false;
-
-	const dispatchEvent = createEventDispatcher<{ update: { value: string } }>();
 
 	let startRangeBefore: number | undefined = undefined;
 	let endRangeBefore: number | undefined = undefined;
@@ -78,8 +79,6 @@
 		const position = (lastPosition = getPosition(event));
 
 		value = clamp((position - minX) / (maxX - minX), 0, 1).toFixed(maxPrecision);
-
-		dispatchEvent('update', { value: value });
 	}
 
 	const updateFromScroll = throttle((event: WheelEvent) => {
@@ -95,7 +94,6 @@
 		requestAnimationFrame(() => {
 			setRange();
 		});
-		dispatchEvent('update', { value: value });
 	}, 50);
 
 	const onScroll = function onScroll(event: WheelEvent) {
@@ -220,13 +218,14 @@
 			});
 		} else {
 			value = newValue;
-			dispatchEvent('update', { value: newValue });
 		}
 	};
 
 	$: {
 		progress = Number(value) * 100;
 	}
+
+	const id = Math.random().toString().slice(2);
 </script>
 
 <div
@@ -234,9 +233,15 @@
 	style={`--progress: ${progress.toFixed(1)}%; --input-width: ${maxPrecision + 5}ch`}
 	bind:this={wrapper}
 >
-	<div class="input"><slot /></div>
+	<div class="input">
+		<label for={id} aria-label={label} class={prefix ? '' : 'screen-reader'}>{prefix}</label>
+		<textarea {...$$props} {disabled} {name} {id} bind:value />
+	</div>
 	<div class="hover">
-		<span class="hover-inner"><slot name="text" /></span>
+		<span class="hover-inner">
+			{#if prefix}<span>{prefix}</span>{/if}
+			<span contenteditable="true">{value}</span>
+		</span>
 	</div>
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<span
@@ -266,7 +271,6 @@
 
 	.input {
 		width: var(--input-width);
-		padding-left: 0.5rem;
 	}
 
 	.hover {
@@ -310,22 +314,20 @@
 	.hover-inner {
 		pointer-events: none;
 		position: absolute;
-		margin-left: 0.5rem;
 	}
 	.hover-inner:focus-within {
 		background: var(--color, #fff);
 	}
-	.hover-inner :global([contenteditable]),
-	.wrapper :global(textarea) {
-		padding-left: 0.5ch;
-	}
-	.hover-inner :global([contenteditable]):focus {
+	.hover-inner:focus-within {
 		pointer-events: all;
 		position: absolute;
 		top: 50%;
 		transform: translateY(-50%);
 		outline: none;
 		background: var(--color, #fff);
+	}
+	.hover-inner [contenteditable]:focus {
+		outline: none;
 	}
 
 	.wrapper:focus-within::before,
@@ -344,7 +346,7 @@
 		overflow: visible;
 	}
 
-	.wrapper:focus-within :global(textarea) {
+	.wrapper:focus-within textarea {
 		opacity: 0;
 	}
 
@@ -366,5 +368,43 @@
 		top: -100%;
 		right: 0;
 		bottom: 0;
+	}
+
+	textarea {
+		display: block;
+		width: 100%;
+		height: 1.6rem;
+		line-height: 1.6rem;
+		padding: 1px 0 0;
+		background: transparent;
+		border: none;
+		color: #fff;
+		font-family: inherit;
+		font-size: 1em;
+		resize: none;
+		overflow: hidden;
+	}
+
+	textarea:disabled {
+		pointer-events: none;
+		color: rgba(255 255 255 / 0.6);
+	}
+
+	textarea:focus {
+		outline: none;
+	}
+
+	textarea[type='number']::-webkit-outer-spin-button,
+	textarea[type='number']::-webkit-inner-spin-button {
+		appearance: none;
+		margin: 0;
+	}
+
+	.input,
+	.hover-inner {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-left: 0.5rem;
 	}
 </style>

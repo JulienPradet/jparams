@@ -71,6 +71,7 @@ const setParamsValueFromUrl = <T extends ParamsDefinition>(
 				if (process.env.NODE_ENV) {
 					console.error(`Failed to initialize ${key} from ${url.search}`);
 					console.error(newParams[key].value, value);
+					console.error(e);
 				}
 			}
 		}

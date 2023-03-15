@@ -28,7 +28,9 @@ describe('Params.svelte', () => {
 		render(Params<typeof params>, {
 			props: {
 				random,
-				params
+				params,
+				getInitialLockState: () => false,
+				onLockUpdate: () => {}
 			}
 		});
 
@@ -51,7 +53,9 @@ describe('Params.svelte', () => {
 			const { component } = render(Params<typeof params>, {
 				props: {
 					random,
-					params
+					params,
+					getInitialLockState: () => false,
+					onLockUpdate: () => {}
 				}
 			});
 
@@ -85,7 +89,9 @@ describe('Params.svelte', () => {
 			const { component, container } = render(Params<typeof params>, {
 				props: {
 					random,
-					params
+					params,
+					getInitialLockState: () => false,
+					onLockUpdate: () => {}
 				}
 			});
 
@@ -109,7 +115,7 @@ describe('Params.svelte', () => {
 			});
 		});
 
-		it.skip('should not trigger a change event if the user changes a value with an invalid one', async () => {
+		it('should not trigger a change event if the user changes a value with an invalid one', async () => {
 			const user = userEvent.setup();
 			const random = createRandom();
 
@@ -121,10 +127,12 @@ describe('Params.svelte', () => {
 				}
 			});
 
-			const { component, container } = render(Params<typeof params>, {
+			const { component } = render(Params<typeof params>, {
 				props: {
 					random,
-					params
+					params,
+					getInitialLockState: () => false,
+					onLockUpdate: () => {}
 				}
 			});
 
@@ -138,14 +146,8 @@ describe('Params.svelte', () => {
 
 			await sleep(100);
 
-			expect(changeMock).toHaveBeenCalledOnce();
-
-			const formData: FormData = changeMock.mock.calls[0][0].detail;
-			const data = extractFormData(formData);
-
-			expect(data).toEqual({
-				name: '0.5'
-			});
+			expect(changeMock).not.toHaveBeenCalled();
+			expect(textarea.closest('form')).toHaveFormValues({ name: '0.5' });
 		});
 
 		it('should trigger a resetAll event upon reset click', async () => {
@@ -163,7 +165,9 @@ describe('Params.svelte', () => {
 			const { component, container } = render(Params<typeof params>, {
 				props: {
 					random,
-					params
+					params,
+					getInitialLockState: () => false,
+					onLockUpdate: () => {}
 				}
 			});
 
@@ -194,7 +198,9 @@ describe('Params.svelte', () => {
 			render(Params<typeof params>, {
 				props: {
 					random,
-					params
+					params,
+					getInitialLockState: () => false,
+					onLockUpdate: () => {}
 				}
 			});
 
@@ -219,7 +225,7 @@ describe('Params.svelte', () => {
 	});
 
 	describe('reset specific field', () => {
-		it('should hide input and reset button if one clicks on the Close button of a field', async () => {
+		it('should change param value if one clicked on reset button', async () => {
 			const user = userEvent.setup();
 			const random = createRandom();
 
@@ -236,7 +242,9 @@ describe('Params.svelte', () => {
 			const { component } = render(Params<typeof params>, {
 				props: {
 					random,
-					params
+					params,
+					getInitialLockState: () => false,
+					onLockUpdate: () => {}
 				}
 			});
 
@@ -257,6 +265,79 @@ describe('Params.svelte', () => {
 			expect(data).toEqual({
 				name: '0.2'
 			});
+		});
+	});
+
+	describe('lock', () => {
+		it('should hide input upon locking a param', async () => {
+			const user = userEvent.setup();
+			const random = createRandom();
+
+			random.value = vi.fn(() => 0.2);
+
+			const params = defineParams(random, {
+				name: {
+					type: 'int',
+					label: 'Name',
+					value: 0.5
+				}
+			});
+
+			const onLockUpdateMock = vi.fn();
+			render(Params<typeof params>, {
+				props: {
+					random,
+					params,
+					getInitialLockState: () => false,
+					onLockUpdate: onLockUpdateMock
+				}
+			});
+
+			await user.click(
+				await screen.findByRole('button', {
+					name: 'Lock'
+				})
+			);
+
+			await waitFor(async () => {
+				expect(await screen.queryByLabelText('Name')).not.toBeInTheDocument();
+			});
+
+			expect(onLockUpdateMock).toHaveBeenCalledWith('name', true);
+		});
+
+		it('should start with unlock button if the param was initially locked', async () => {
+			const user = userEvent.setup();
+			const random = createRandom();
+
+			random.value = vi.fn(() => 0.2);
+
+			const params = defineParams(random, {
+				name: {
+					type: 'int',
+					label: 'Name',
+					value: 0.5
+				}
+			});
+
+			const onLockUpdateMock = vi.fn();
+			render(Params<typeof params>, {
+				props: {
+					random,
+					params,
+					getInitialLockState: () => true,
+					onLockUpdate: onLockUpdateMock
+				}
+			});
+
+			await user.click(
+				await screen.findByRole('button', {
+					name: 'Unlock'
+				})
+			);
+
+			expect(await screen.findByLabelText('Name')).toBeInTheDocument();
+			expect(onLockUpdateMock).toHaveBeenCalledWith('name', false);
 		});
 	});
 });

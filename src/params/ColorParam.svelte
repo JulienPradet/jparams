@@ -10,17 +10,36 @@
 
 	export let name: string;
 	export let param: InitialiazedParam<ColorParam>;
+	export let value: Color;
 	export let disabled: boolean = false;
 
 	let wrapper: HTMLElement;
 	let copied = false;
-	let value = param.value;
 	let stringifiedValue = [
 		valueToInput(value[0]),
 		valueToInput(value[1]),
 		valueToInput(value[2]),
 		valueToInput(value[3])
 	];
+
+	$: {
+		let hasChanged = false;
+		let newValue: Color = [0, 0, 0, 0];
+		stringifiedValue = stringifiedValue.map((stringValue, index) => {
+			if (Number.isNaN(Number(stringValue))) {
+				newValue[index] = value[index];
+				return valueToInput(value[index]);
+			} else {
+				newValue[index] = Number(stringValue);
+				copied = false;
+				hasChanged = true;
+				return stringValue;
+			}
+		});
+		if (hasChanged) {
+			value = newValue;
+		}
+	}
 
 	function getRgba(value: Color) {
 		let rgb = hsvToRgb(value[0], value[1], value[2]);
@@ -35,17 +54,17 @@
 		}
 	}
 
-	function onChange(index: number, event: CustomEvent<{ value: string }>) {
-		const newValue = clamp(Number(event.detail.value), 0, 1);
-		if (Number.isNaN(newValue)) {
-			value[index] = value[index];
-			stringifiedValue[index] = stringifiedValue[index];
-		} else {
-			stringifiedValue[index] = event.detail.value;
-			value[index] = newValue;
-			copied = false;
-		}
-	}
+	// function onChange(index: number, event: CustomEvent<{ value: string }>) {
+	// 	const newValue = clamp(Number(event.detail.value), 0, 1);
+	// 	if (Number.isNaN(newValue)) {
+	// 		value[index] = value[index];
+	// 		stringifiedValue[index] = stringifiedValue[index];
+	// 	} else {
+	// 		stringifiedValue[index] = event.detail.value;
+	// 		value[index] = newValue;
+	// 		copied = false;
+	// 	}
+	// }
 
 	const random = getRandomContext();
 
@@ -155,96 +174,40 @@
 >
 	<div class="inputs">
 		<DraggableInput
-			on:mount
-			on:update={onChange.bind(null, 0)}
-			value={stringifiedValue[0]}
-			maxPrecision={3}
+			label={`${param.label} hue`}
+			name={`${name}[0]`}
 			{disabled}
-		>
-			<div class="inline">
-				<label for={`${name}[0]`}>h:</label>
-				<BaseInput
-					label={`${param.label} hue`}
-					name={`${name}[0]`}
-					type="number"
-					step="0.001"
-					value={stringifiedValue[0]}
-					{disabled}
-					on:change={onChange.bind(null, 0)}
-					--border="none"
-				/>
-			</div>
-			<svelte:fragment slot="text">
-				h:<span contenteditable="true">{stringifiedValue[0]}</span>
-			</svelte:fragment>
-		</DraggableInput>
+			bind:value={stringifiedValue[0]}
+			maxPrecision={3}
+			prefix={'h:'}
+		/>
 
 		<DraggableInput
-			on:update={onChange.bind(null, 1)}
-			value={stringifiedValue[1]}
-			maxPrecision={3}
+			label={`${param.label} saturation`}
+			name={`${name}[1]`}
 			{disabled}
-		>
-			<div class="inline">
-				<label for={`${name}[0]`}>s:</label>
-				<BaseInput
-					label={`${param.label} saturation`}
-					name={`${name}[1]`}
-					type="number"
-					step="0.001"
-					value={stringifiedValue[1]}
-					{disabled}
-					on:change={onChange.bind(null, 1)}
-					--border="none"
-				/>
-			</div>
-			<svelte:fragment slot="text">
-				s:<span contenteditable="true">{stringifiedValue[1]}</span>
-			</svelte:fragment>
-		</DraggableInput>
+			bind:value={stringifiedValue[1]}
+			maxPrecision={3}
+			prefix={'s:'}
+		/>
 
 		<DraggableInput
-			on:update={onChange.bind(null, 2)}
-			value={stringifiedValue[2]}
-			maxPrecision={3}
+			label={`${param.label} value`}
+			name={`${name}[2]`}
 			{disabled}
-		>
-			<div class="inline">
-				<label for={`${name}[0]`}>v:</label>
-				<BaseInput
-					label={`${param.label} value`}
-					name={`${name}[2]`}
-					type="number"
-					step="0.001"
-					value={stringifiedValue[2]}
-					{disabled}
-					on:change={onChange.bind(null, 2)}
-					--border="none"
-				/>
-			</div>
-			<svelte:fragment slot="text">
-				v:<span contenteditable="true">{stringifiedValue[2]}</span>
-			</svelte:fragment>
-		</DraggableInput>
+			bind:value={stringifiedValue[2]}
+			maxPrecision={3}
+			prefix={'v:'}
+		/>
 
-		<DraggableInput on:update={onChange.bind(null, 3)} value={stringifiedValue[3]} {disabled}>
-			<div class="inline">
-				<label for={`${name}[0]`}>a:</label>
-				<BaseInput
-					label={`${param.label} alpha`}
-					name={`${name}[3]`}
-					type="number"
-					step="0.001"
-					value={stringifiedValue[3]}
-					{disabled}
-					on:change={onChange.bind(null, 3)}
-					--border="none"
-				/>
-			</div>
-			<svelte:fragment slot="text">
-				a:<span contenteditable="true">{stringifiedValue[3]}</span>
-			</svelte:fragment>
-		</DraggableInput>
+		<DraggableInput
+			label={`${param.label} alpha`}
+			name={`${name}[3]`}
+			{disabled}
+			bind:value={stringifiedValue[3]}
+			maxPrecision={3}
+			prefix={'a:'}
+		/>
 	</div>
 	<div class="preview">
 		<button class="clipboard-button" type="button" on:click={copy}>
@@ -270,16 +233,6 @@
 
 	.inputs > :global(* + *) {
 		border-top: 1px solid #17212b;
-	}
-
-	.inline {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
-
-	label {
-		color: #fff;
 	}
 
 	.preview {

@@ -7,44 +7,29 @@
 	export let name: string;
 	export let param: InitialiazedParam<IntParam>;
 	export let disabled: boolean;
-
-	let value = param.value;
-	let stringifiedValue = value.toString();
-
-	function onChange(event: CustomEvent<{ value: string }>) {
-		const newValue = Number(event.detail.value);
-
-		if (Number.isNaN(newValue)) {
-			value = value;
-			stringifiedValue = stringifiedValue;
-		} else {
-			stringifiedValue = event.detail.value;
-			value = newValue;
-		}
-	}
-
-	const random = getRandomContext();
+	export let value: number;
 
 	export const onReset = () => {
 		value = getInitialValue(random, name, param);
 		stringifiedValue = value.toString();
 	};
+
+	let stringifiedValue = value.toString();
+
+	$: {
+		const newValue = Number(stringifiedValue);
+		if (Number.isNaN(newValue)) {
+			stringifiedValue = value.toString();
+		} else {
+			value = newValue;
+		}
+	}
+
+	const random = getRandomContext();
 </script>
 
 <div class="wrapper">
-	<DraggableInput {disabled} on:update={onChange} value={stringifiedValue}>
-		<BaseInput
-			label={param.label}
-			{name}
-			value={stringifiedValue}
-			{disabled}
-			on:change={onChange}
-			--border="none"
-		/>
-		<svelte:fragment slot="text"
-			><span contenteditable="true">{stringifiedValue}</span></svelte:fragment
-		>
-	</DraggableInput>
+	<DraggableInput label={param.label} {name} {disabled} bind:value={stringifiedValue} />
 </div>
 
 <style>

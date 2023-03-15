@@ -7,6 +7,7 @@
 	import debounce from '../util/debounce';
 	import { Params, ParamsDefinition, ParamTypes, InitialiazedParam } from './defineParams';
 	import InputRenderer from './InputRenderer.svelte';
+	import { GetInitialLockState, LockUpdateHandler, setLockContext } from './lockContext';
 	import { setRandomContext } from './randomContext';
 
 	type T = $$Generic;
@@ -15,6 +16,8 @@
 
 	export let params: ActualParams;
 	export let random: CanvasSketchUtilRandom;
+    export let getInitialLockState: GetInitialLockState;
+    export let onLockUpdate: LockUpdateHandler;
 
 	let form: HTMLFormElement;
 
@@ -103,7 +106,7 @@
 		resetAll: undefined;
 	}>();
 
-	const listenChanges = debounce(function listenChanges(form: HTMLFormElement | null) {
+	const onUpdate = debounce(function onUpdate() {
 		if (!form || isFirstUpdate) {
 			return;
 		}
@@ -111,10 +114,6 @@
 		const data = new FormData(form);
 		dispatch('change', data);
 	}, 100);
-
-	const listenProgrammaticFormChanges = (event: Event) => {
-		listenChanges(event.target as HTMLFormElement);
-	};
 
 	let isFirstUpdate = true;
 	let inputsReady: { [key in keyof ActualParams]: boolean | undefined } = {} as {
@@ -146,24 +145,13 @@
 	}
 
 	setRandomContext(random);
-
-	onMount(() => {
-		if (form) {
-			form.addEventListener('programmaticChange', listenProgrammaticFormChanges);
-		}
-	});
+    setLockContext(getInitialLockState, onLockUpdate);
 
 	beforeUpdate(() => {
 		isFirstUpdate = true;
 		inputsReady = {} as {
 			[key in keyof ActualParams]: boolean;
 		};
-	});
-
-	onDestroy(() => {
-		if (form) {
-			form.removeEventListener('programmaticChange', listenProgrammaticFormChanges);
-		}
 	});
 </script>
 
@@ -174,18 +162,12 @@
 
 	<button class="reset-all" type="button" on:click={onResetAll}>Reset all parameters</button>
 
-	<form
-		method="get"
-		action="."
-		data-testid="form-params"
-		on:change={(event) => listenChanges(event.currentTarget)}
-		bind:this={form}
-	>
+	<form method="get" action="." data-testid="form-params" bind:this={form}>
 		{#each getEntries(params) as { name, label, props }}
 			{#await props}
 				<!-- <p>Loading...</p> -->
 			{:then props}
-				<InputRenderer {name} {label} {props} on:ready={onReady} />
+				<InputRenderer {name} {label} {props} on:ready={onReady} on:update={onUpdate} />
 			{:catch error}
 				{@debug error}
 			{/await}
