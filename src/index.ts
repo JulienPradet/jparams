@@ -4,11 +4,9 @@ import {
 	defineParams,
 	IntParam,
 	paramSerializer,
-	resetAll,
-	resetKey,
 	SelectParam
 } from './params/defineParams';
-import { localStorageParams } from './params/localStorageParams';
+import { localStorageParams } from './params/storage/localStorageParams';
 import Params from './params/Params.svelte';
 import { setParamsValueFromUrl } from './params/setParamsValueFromUrl';
 
