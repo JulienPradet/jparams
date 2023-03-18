@@ -8,6 +8,7 @@ import {
 	resetKey,
 	SelectParam
 } from './params/defineParams';
+import { localStorageParams } from './params/localStorageParams';
 import Params from './params/Params.svelte';
 import { setParamsValueFromUrl } from './params/setParamsValueFromUrl';
 
@@ -62,20 +63,16 @@ const paramsComponent = new Params({
 	props: {
 		random,
 		params,
-		getInitialLockState: (name) => {
-			return Boolean(JSON.parse(localStorage.getItem(`params_${name}_locked`) || 'false'));
-		},
-		onLockUpdate: (name, isLocked) => {
-			localStorage.setItem(`params_${name}_locked`, JSON.stringify(isLocked));
-		}
+		storage: localStorageParams
 	}
 });
 
 const getSearchParamsFromFormData = (previousParams: typeof params, formData: FormData) => {
 	const searchParams = new URLSearchParams();
 	Object.entries(previousParams).forEach(([key, param]) => {
+		const type = param.type;
 		const value = param.value;
-		const serialize = paramSerializer[param.type].serialize;
+		const serialize = paramSerializer[type].serialize;
 
 		// @ts-ignore
 		const serializedValue = serialize(value);
@@ -103,17 +100,6 @@ paramsComponent.$on('init', (event) => {
 	}
 });
 
-paramsComponent.$on('resetAll', (event) => {
-	params = resetAll(random, params);
-	paramsComponent.$set({ params });
-});
-
-paramsComponent.$on('reset', (event) => {
-	const key = event.detail;
-	params = resetKey(random, params, key);
-	paramsComponent.$set({ params });
-});
-
 paramsComponent.$on('change', (event) => {
 	const formData = event.detail;
 	const searchParams = getSearchParamsFromFormData(params, formData);
@@ -121,7 +107,8 @@ paramsComponent.$on('change', (event) => {
 	window.history.pushState(document.title, '', `?${searchParams.toString()}`);
 });
 
-window.addEventListener('popstate', () => {
+window.addEventListener('popstate', (event) => {
+	event.preventDefault();
 	params = setParamsValueFromUrl(random, params, new URL(window.location.href));
 	paramsComponent.$set({ params });
 });

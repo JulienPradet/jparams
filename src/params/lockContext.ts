@@ -34,8 +34,16 @@ export const setLockContext = (
 	getInitialValue: LockContext['getInitialLockState'],
 	onUpdate: LockContext['onLockUpdate']
 ) => {
-	setContext<LockContext>(lockKey, {
+	function isLockedKey(name: string) {
+		return lockContext.getInitialLockState(name) || false;
+	}
+
+	const lockContext = {
 		getInitialLockState: getInitialValue,
-		onLockUpdate: onUpdate
-	});
+		onLockUpdate: onUpdate,
+		isLockedKey: isLockedKey
+	};
+	setContext<LockContext>(lockKey, lockContext);
+
+	return lockContext;
 };

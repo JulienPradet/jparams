@@ -1,17 +1,15 @@
 <script lang="ts">
-	import { clamp } from 'canvas-sketch-util/math';
 	import { Color } from '../color/Color';
 	import { hsvToRgb } from '../color/hsvToRgb';
 	import { hexToRgb, rgbToHsv } from '../color/rgbToHsv';
-	import BaseInput from './BaseInput.svelte';
 	import { ColorParam, getInitialValue, InitialiazedParam } from './defineParams';
 	import DraggableInput from './DraggableInput.svelte';
 	import { getRandomContext } from './randomContext';
 
 	export let name: string;
 	export let param: InitialiazedParam<ColorParam>;
+	export let disabled: boolean;
 	export let value: Color;
-	export let disabled: boolean = false;
 
 	let wrapper: HTMLElement;
 	let copied = false;
@@ -54,22 +52,10 @@
 		}
 	}
 
-	// function onChange(index: number, event: CustomEvent<{ value: string }>) {
-	// 	const newValue = clamp(Number(event.detail.value), 0, 1);
-	// 	if (Number.isNaN(newValue)) {
-	// 		value[index] = value[index];
-	// 		stringifiedValue[index] = stringifiedValue[index];
-	// 	} else {
-	// 		stringifiedValue[index] = event.detail.value;
-	// 		value[index] = newValue;
-	// 		copied = false;
-	// 	}
-	// }
-
 	const random = getRandomContext();
 
 	export const onReset = () => {
-		value = getInitialValue(random, name, param);
+		value = getInitialValue(random, param);
 		stringifiedValue = [
 			valueToInput(value[0]),
 			valueToInput(value[1]),

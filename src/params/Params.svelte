@@ -1,13 +1,31 @@
 <svelte:options accessors />
 
+<script context="module" lang="ts">
+	export type Storage = {
+		getInitialLockState: GetInitialLockState;
+		onLockUpdate: LockUpdateHandler;
+		getInitialOpenState: GetInitialLockState;
+		onOpenUpdate: LockUpdateHandler;
+	};
+</script>
+
 <script lang="ts">
 	import { CanvasSketchUtilRandom } from 'canvas-sketch-util/random';
-	import { createEventDispatcher, onDestroy, onMount, beforeUpdate } from 'svelte';
-	import { SvelteComponentTyped } from 'svelte/internal';
+	import { createEventDispatcher, tick, beforeUpdate } from 'svelte';
 	import debounce from '../util/debounce';
-	import { Params, ParamsDefinition, ParamTypes, InitialiazedParam } from './defineParams';
+	import { componentsMap, InputComponent, InputComponents } from './componentsMap';
+	import {
+		Params,
+		ParamsDefinition,
+		ParamTypes,
+		InitialiazedParam,
+		resetAll,
+		getKeysFromParams,
+		Param
+	} from './defineParams';
 	import InputRenderer from './InputRenderer.svelte';
 	import { GetInitialLockState, LockUpdateHandler, setLockContext } from './lockContext';
+	import { setOpenContext } from './openContext';
 	import { setRandomContext } from './randomContext';
 
 	type T = $$Generic;
@@ -16,21 +34,13 @@
 
 	export let params: ActualParams;
 	export let random: CanvasSketchUtilRandom;
-    export let getInitialLockState: GetInitialLockState;
-    export let onLockUpdate: LockUpdateHandler;
+	export let storage: Storage;
 
 	let form: HTMLFormElement;
 
-	const componentsMap = {
-		int: async () => (await import('./IntParam.svelte')).default,
-		string: async () => (await import('./StringParam.svelte')).default,
-		color: async () => (await import('./ColorParam.svelte')).default,
-		select: async () => (await import('./SelectParam.svelte')).default
-	};
-
-	type InputComponents = {
-		[key in keyof ParamTypes]: Awaited<ReturnType<(typeof componentsMap)[key]>>;
-	};
+	setRandomContext(random);
+	const lockContext = setLockContext(storage.getInitialLockState, storage.onLockUpdate);
+	setOpenContext(storage.getInitialOpenState, storage.onOpenUpdate);
 
 	let componentsPromise: Promise<InputComponents>;
 	componentsPromise = Promise.all(
@@ -49,50 +59,28 @@
 		}, {} as InputComponents);
 	});
 
-	async function getInputRendererProps<
-		Key extends keyof ActualParamsDefinition,
-		Param extends ActualParams[Key],
-		Type extends ActualParamsDefinition[Key]['type']
-	>(component: InputComponents[Type], name: Key, param: Param) {
-		type Props = InputComponents[Type] extends typeof SvelteComponentTyped<
-			infer P extends Record<string, any>
-		>
-			? P
-			: never;
-
-		return {
-			component: component,
-			props: {
-				name: name,
-				param: param
-			} as any as Props
-		};
-	}
-
-	function getEntries(params: Params<ActualParamsDefinition>) {
-		type EntryPropsFunction<Key extends keyof ActualParamsDefinition> =
-			typeof getInputRendererProps<
-				Key,
-				InitialiazedParam<ActualParamsDefinition[Key]>,
-				ActualParamsDefinition[Key]['type']
-			>;
-
-		type Entry<Key extends keyof ActualParamsDefinition> = {
+	function getEntries(params: ActualParams): {
+		name: string;
+		label: string;
+		param: InitialiazedParam<Param>;
+		component: Promise<InputComponent<keyof ParamTypes>>;
+	}[] {
+		type Entry = {
 			name: string;
 			label: string;
-			props: ReturnType<EntryPropsFunction<Key>>;
+			param: InitialiazedParam<Param>;
+			component: Promise<InputComponent<keyof ParamTypes>>;
 		};
 
-		let entries: Array<Entry<keyof ActualParamsDefinition>> = [];
+		let entries: Array<Entry> = [];
 
 		for (let key in params) {
 			const param = params[key];
 			entries.push({
 				name: key,
 				label: param.label || key,
-				props: componentsPromise.then((components) =>
-					getInputRendererProps(components[param.type], key, param)
-				)
+				param: param as InitialiazedParam<Param>,
+				component: componentsPromise.then((components) => components[param.type])
 			});
 		}
 
@@ -102,8 +90,6 @@
 	const dispatch = createEventDispatcher<{
 		change: FormData;
 		init: FormData;
-		reset: keyof ActualParams;
-		resetAll: undefined;
 	}>();
 
 	const onUpdate = debounce(function onUpdate() {
@@ -140,12 +126,17 @@
 		}
 	}
 
-	function onResetAll() {
-		dispatch('resetAll');
-	}
+	async function onResetAll() {
+		const keys = getKeysFromParams(params);
+		const unlockedKeys = keys.filter((key) => !lockContext.isLockedKey(key));
+		if (unlockedKeys.length === 0) {
+			return;
+		}
 
-	setRandomContext(random);
-    setLockContext(getInitialLockState, onLockUpdate);
+		params = resetAll(random, params, unlockedKeys);
+		await tick();
+		onUpdate();
+	}
 
 	beforeUpdate(() => {
 		isFirstUpdate = true;
@@ -163,11 +154,11 @@
 	<button class="reset-all" type="button" on:click={onResetAll}>Reset all parameters</button>
 
 	<form method="get" action="." data-testid="form-params" bind:this={form}>
-		{#each getEntries(params) as { name, label, props }}
-			{#await props}
+		{#each getEntries(params) as { name, label, param, component }}
+			{#await component}
 				<!-- <p>Loading...</p> -->
-			{:then props}
-				<InputRenderer {name} {label} {props} on:ready={onReady} on:update={onUpdate} />
+			{:then component}
+				<InputRenderer {name} {label} {param} {component} on:ready={onReady} on:update={onUpdate} />
 			{:catch error}
 				{@debug error}
 			{/await}

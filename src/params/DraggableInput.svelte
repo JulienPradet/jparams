@@ -234,8 +234,11 @@
 	bind:this={wrapper}
 >
 	<div class="input">
-		<label for={id} aria-label={label} class={prefix ? '' : 'screen-reader'}>{prefix}</label>
-		<textarea {...$$props} {disabled} {name} {id} bind:value />
+		<label for={id}>
+			<span class="screen-reader">{label}</span>
+			{prefix}
+		</label>
+		<textarea {name} {id} bind:value />
 	</div>
 	<div class="hover">
 		<span class="hover-inner">
@@ -243,7 +246,6 @@
 			<span contenteditable="true">{value}</span>
 		</span>
 	</div>
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<span
 		class="cursor"
 		on:mousedown={disabled ? () => {} : onDragStart}
@@ -392,12 +394,6 @@
 
 	textarea:focus {
 		outline: none;
-	}
-
-	textarea[type='number']::-webkit-outer-spin-button,
-	textarea[type='number']::-webkit-inner-spin-button {
-		appearance: none;
-		margin: 0;
 	}
 
 	.input,

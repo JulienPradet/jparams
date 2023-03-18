@@ -1,41 +1,38 @@
 <script lang="ts">
-	import { afterUpdate, SvelteComponentTyped } from 'svelte/internal';
-	import { createEventDispatcher, onMount, tick } from 'svelte';
+	import { createEventDispatcher, onMount, afterUpdate, SvelteComponentTyped } from 'svelte';
 	import { getLock$ } from './lockContext';
+	import HiddenInputs from './HiddenInputs.svelte';
+	import { InitialiazedParam, Param, ParamTypes } from './defineParams';
+	import type { InputComponent } from './componentsMap';
+	import { getOpen$ } from './openContext';
+
+	type ParamType = $$Generic<keyof ParamTypes>;
 
 	export let name: string;
 	export let label: string;
+	export let param: InitialiazedParam<ParamTypes[ParamType]>;
+	export let component: InputComponent<ParamType>;
 
 	let onReset: () => void;
 
-	const localStorageOpenedKey = `params_inputrenderer_opened_${name}`;
-	let opened = Boolean(JSON.parse(localStorage.getItem(localStorageOpenedKey) || 'true'));
-	localStorage.setItem(localStorageOpenedKey, JSON.stringify(opened));
+	let open = getOpen$(name);
+	let lock = getLock$(name);
 
 	function onToggle() {
-		opened = !opened;
-		localStorage.setItem(localStorageOpenedKey, JSON.stringify(opened));
+		open.update((opened) => !opened);
 	}
-
-	let lock = getLock$(name);
 
 	function onLockToggle() {
 		$lock = !$lock;
 
 		if ($lock) {
-			opened = false;
+			open.set(false);
 		} else {
-			opened = true;
+			open.set(true);
 		}
 	}
 
-	type C = $$Generic<typeof SvelteComponentTyped<any, any, any>>;
-	export let props: {
-		component: C;
-		props: C extends typeof SvelteComponentTyped<infer P extends Record<string, any>> ? P : never;
-	};
-
-	let value = props.props.param.value;
+	let value = param.value;
 	let previousValue = value;
 
 	const dispatch = createEventDispatcher<{ ready: string; update: any }>();
@@ -52,14 +49,14 @@
 	});
 </script>
 
-<div class={`row ${opened ? 'opened' : ''} ${$lock ? 'disabled' : ''}`}>
+<div class={`row ${$open ? 'opened' : ''} ${$lock ? 'disabled' : ''}`}>
 	<div class="label-row">
 		<button
 			type="button"
-			class={`toggle ${opened ? 'opened' : ''}`}
+			class={`toggle ${$open ? 'opened' : ''}`}
 			on:click={onToggle}
-			title={opened ? 'Close' : 'Open'}
-			aria-label={`${opened ? 'Close' : 'Open'} ${label}`}
+			title={$open ? 'Close' : 'Open'}
+			aria-label={`${$open ? 'Close' : 'Open'} ${label}`}
 		>
 			{label}
 		</button>
@@ -72,16 +69,12 @@
 			aria-label={$lock ? 'Unlock' : 'Lock'}
 		/>
 	</div>
-	{#if opened}
+	{#if $open}
 		<div class="input">
-			<svelte:component
-				this={props.component}
-				{...props.props}
-				disabled={$lock}
-				bind:value
-				bind:onReset
-			/>
+			<svelte:component this={component} {name} {param} disabled={$lock} bind:value bind:onReset />
 		</div>
+	{:else}
+		<HiddenInputs {name} {param} {value} />
 	{/if}
 </div>
 

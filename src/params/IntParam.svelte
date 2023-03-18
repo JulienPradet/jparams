@@ -1,6 +1,5 @@
 <script lang="ts">
-	import BaseInput from './BaseInput.svelte';
-	import { getInitialValue, IntParam, InitialiazedParam } from './defineParams';
+	import { getInitialValue, InitialiazedParam, IntParam } from './defineParams';
 	import DraggableInput from './DraggableInput.svelte';
 	import { getRandomContext } from './randomContext';
 
@@ -8,9 +7,8 @@
 	export let param: InitialiazedParam<IntParam>;
 	export let disabled: boolean;
 	export let value: number;
-
 	export const onReset = () => {
-		value = getInitialValue(random, name, param);
+		value = getInitialValue(random, param);
 		stringifiedValue = value.toString();
 	};
 

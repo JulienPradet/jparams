@@ -2,19 +2,24 @@
 	import { getInitialValue, InitialiazedParam, SelectParam } from './defineParams';
 	import { getRandomContext } from './randomContext';
 
-	type T = $$Generic;
-	type ActualSelectParam = T extends SelectParam<infer Option> ? SelectParam<Option> : never;
-	type Option = Required<ActualSelectParam>['value'];
+	type Option = $$Generic<string>;
 
 	export let name: string;
-	export let param: InitialiazedParam<ActualSelectParam>;
-	export let disabled: boolean = false;
+	export let param: InitialiazedParam<SelectParam<Option>>;
+	export let disabled: boolean;
 	export let value: Option;
 
 	let select: HTMLSelectElement;
 
 	function onChange(event: Event & { currentTarget: EventTarget & HTMLSelectElement }) {
-		const newValue = event.currentTarget.value;
+		const newValue = event.currentTarget.value as Option;
+		// Manually check that the new option is valid
+		if (!param.options.includes(newValue)) {
+			throw new Error(
+				'Invalid selected option. This should never happen without ill intent since the values come from a select tag.'
+			);
+		}
+
 		value = newValue;
 
 		select.closest('form')?.dispatchEvent(
@@ -28,7 +33,7 @@
 	const random = getRandomContext();
 
 	export const onReset = () => {
-		value = getInitialValue(random, name, param);
+		value = getInitialValue(random, param);
 		select.closest('form')?.dispatchEvent(
 			new Event('programmaticChange', {
 				bubbles: true,

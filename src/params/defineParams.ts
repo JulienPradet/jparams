@@ -1,11 +1,9 @@
 import type { CanvasSketchUtilRandom } from 'canvas-sketch-util/random';
-import { T } from 'vitest/dist/types-7cd96283';
 import { Color } from '../color/Color';
 
 /* In order to add a new parameter type:
- * - export its type
- * - add the type to ParamTypes
- * - 🚩 take the new type into account in `resetParam`
+ * - add the type to ParamTypes and let Typescript guide you
+ * - 🚩 take the new type into account in `getInitialValue`
  */
 
 type Labellable = {
@@ -17,10 +15,11 @@ export type IntParam = Labellable & {
 	defaultValue?: number;
 	value?: number;
 };
-// export type StringParam = Labellable &
-// 	WithValue<string> & {
-// 		type: 'string';
-// 	};
+// export type StringParam = Labellable & {
+// 	type: 'string';
+// 	defaultValue?: string;
+// 	value?: string;
+// };
 export type ColorParam = Labellable & {
 	type: 'color';
 	defaultValue?: ReturnType<typeof Color>;
@@ -42,7 +41,7 @@ export type ParamTypes = {
 
 type GetValuesTypes<Type> = Type extends { [key in keyof ParamTypes]: infer V } ? V : never;
 
-type Param = GetValuesTypes<ParamTypes>;
+export type Param = GetValuesTypes<ParamTypes>;
 
 export type GroupParam = Labellable & {
 	children: Param[];
@@ -50,6 +49,9 @@ export type GroupParam = Labellable & {
 
 export type InitialiazedParam<T extends Param> = Omit<T, 'value' | 'label'> &
 	Required<Pick<T, 'value' | 'label'>>;
+
+export type TypeofInitializedParam<IP extends InitialiazedParam<Param>> =
+	IP extends InitialiazedParam<infer P> ? P : never;
 
 export type ParamsDefinition = { [key in string]: Param };
 export type Params<Definition extends ParamsDefinition> = {
@@ -63,17 +65,8 @@ export type Params<Definition extends ParamsDefinition> = {
  */
 export function getInitialValue<T extends Param>(
 	random: CanvasSketchUtilRandom,
-	key: string,
 	param: T
 ): InitialiazedParam<T>['value'] {
-	const localStorageLockedKey = `params_inputrenderer_locked_${key}`;
-	if (
-		(param.value && JSON.parse(localStorage.getItem(localStorageLockedKey) || 'false')) ||
-		false
-	) {
-		return param.value;
-	}
-
 	if (param.type === 'int') {
 		return random.value();
 	} else if (param.type === 'color') {
@@ -94,9 +87,7 @@ function resetParam<T extends Param>(
 	return {
 		...param,
 		value:
-			force || typeof param.value === 'undefined'
-				? getInitialValue(random, key, param)
-				: param.value,
+			force || typeof param.value === 'undefined' ? getInitialValue(random, param) : param.value,
 		label: param.label || key
 	};
 }
@@ -108,7 +99,7 @@ export const defineParams = <
 	random: CanvasSketchUtilRandom,
 	params: Definition
 ): ActualParams => {
-	return resetAll<Definition, ActualParams>(random, params, false);
+	return resetAll<Definition, ActualParams>(random, params, null, false);
 };
 
 export const resetAll = <
@@ -117,12 +108,18 @@ export const resetAll = <
 >(
 	random: CanvasSketchUtilRandom,
 	params: ActualParams | Definition,
+	includeKeys: (keyof ActualParams)[] | null = null,
 	force = true
 ) => {
-	return Object.entries(params).reduce((acc, [key, value]) => {
+	return Object.entries(params).reduce((acc: ActualParams, [key, param]: [string, Param]) => {
+		const updatedParam =
+			includeKeys === null || includeKeys.includes(key) || typeof param.value === 'undefined'
+				? resetParam(random, key as string, param, force)
+				: param;
+
 		return {
 			...acc,
-			[key]: resetParam(random, key, value, force)
+			[key]: updatedParam
 		};
 	}, {} as ActualParams);
 };
@@ -141,6 +138,15 @@ export const resetKey = <
 			[key]: keyToReset === key ? resetParam(random, key, value) : value
 		};
 	}, {} as ActualParams);
+};
+
+export const getKeysFromParams = <
+	Definition extends ParamsDefinition,
+	ActualParams extends Params<Definition>
+>(
+	params: ActualParams | Definition
+) => {
+	return Object.keys(params);
 };
 
 type GetValueTypeFromParam<T extends Param> = Required<T>['value'];

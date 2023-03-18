@@ -7,7 +7,7 @@ export default defineConfig({
 	build: {
 		assetsDir: '.'
 	},
-	plugins: [svelte({})].concat(
+	plugins: [svelte({ hot: process.env.NODE_ENV === 'test' ? false : undefined })].concat(
 		// Hack to make sure that svelte components are not executed in SSR mode in tests
 		process.env.NODE_ENV === 'test'
 			? [
