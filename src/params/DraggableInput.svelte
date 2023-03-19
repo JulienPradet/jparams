@@ -36,7 +36,7 @@
 		}
 
 		dragging = true;
-		onClick(event);
+		onClick(event, true);
 
 		window.addEventListener('mousemove', onClick);
 		window.addEventListener('mouseup', onDragEnd);
@@ -70,8 +70,11 @@
 		}
 	}
 
-	function onClick(event: MouseEvent | TouchEvent) {
-		event.preventDefault();
+	function onClick(event: MouseEvent | TouchEvent, isStart = false) {
+		if (!isStart) {
+			// Do not preventDefault on passive events
+			event.preventDefault();
+		}
 
 		const bb = clickTarget.getBoundingClientRect();
 		const minX = bb.left;
