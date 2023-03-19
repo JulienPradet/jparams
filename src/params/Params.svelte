@@ -39,6 +39,11 @@
 	let form: HTMLFormElement;
 	let opened = false;
 
+	let isFirstUpdate = true;
+	let inputsReady: { [key in keyof ActualParams]: boolean | undefined } = {} as {
+		[key in keyof ActualParams]: boolean;
+	};
+
 	setRandomContext(random);
 	const lockContext = setLockContext(storage.getInitialLockState, storage.onLockUpdate);
 	setOpenContext(storage.getInitialOpenState, storage.onOpenUpdate);
@@ -102,11 +107,6 @@
 		dispatch('change', data);
 	}, 30);
 
-	let isFirstUpdate = true;
-	let inputsReady: { [key in keyof ActualParams]: boolean | undefined } = {} as {
-		[key in keyof ActualParams]: boolean;
-	};
-
 	function onReady(event: { detail: string }) {
 		if (!isFirstUpdate) {
 			return;
@@ -139,12 +139,14 @@
 		onUpdate();
 	}
 
-	beforeUpdate(() => {
-		isFirstUpdate = true;
-		inputsReady = {} as {
-			[key in keyof ActualParams]: boolean;
-		};
-	});
+	$: {
+		if (params) {
+			isFirstUpdate = true;
+			inputsReady = {} as {
+				[key in keyof ActualParams]: boolean;
+			};
+		}
+	}
 </script>
 
 <div class={`params ${opened ? '' : 'closed'}`}>
