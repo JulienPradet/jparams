@@ -96,6 +96,7 @@
 		cursor: pointer;
 		opacity: 1;
 		transition: opacity 0.1s ease-in-out;
+		border-radius: 2px;
 	}
 
 	.row:not(.opened) .reset,
@@ -168,6 +169,7 @@
 		background: #fff;
 		transition: transform 0.3s cubic-bezier(1, 0, 0, 1);
 		margin: 0 0.25rem;
+		border-radius: 2px;
 	}
 
 	.toggle.opened::after {

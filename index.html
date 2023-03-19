@@ -29,6 +29,30 @@
 				color: currentColor;
 			}
 
+			button {
+				color: currentColor;
+				font-size: inherit;
+				font-family: inherit;
+			}
+
+			/**
+             * Visually hide an element, but leave it available for screen readers
+             * @link https://github.com/h5bp/html5-boilerplate/blob/49b7a124699d719b6bd5f0655225e7e8f471da3e/dist/css/style.css#L109
+             * @link http://snook.ca/archives/html_and_css/hiding-content-for-accessibility
+             */
+			.screen-reader {
+				appearance: none;
+				border: 0;
+				clip: rect(0 0 0 0);
+				height: 1px;
+				margin: -1px;
+				overflow: hidden;
+				padding: 0;
+				position: absolute;
+				white-space: nowrap;
+				width: 1px;
+			}
+
 			body {
 				margin: 0;
 				box-sizing: border-box;
@@ -48,9 +72,13 @@
 				max-height: calc(100vh);
 				height: auto !important;
 				width: auto !important;
+				display: flex;
+				justify-content: center;
+				align-items: center;
 			}
 
-			canvas {
+			canvas,
+			svg {
 				display: block;
 				max-width: 100%;
 				max-height: 100%;
@@ -61,25 +89,46 @@
 
 			.canvas-page {
 				display: grid;
-				grid-template-columns: 20rem auto;
-				grid-template-rows: 1fr;
-				grid-template-areas: 'Params Canvas';
+				grid-template-columns: 1fr;
+				grid-template-rows: 1fr minmax(3.75rem, auto);
+				grid-template-areas:
+					'Canvas'
+					'Params';
 				height: 100%;
 				width: 100%;
+				transition: grid-template-rows 0.2s ease-in-out;
 			}
 
 			.canvas-page__canvas {
+				height: 100%;
 				grid-area: Canvas;
 				text-align: center;
 				color: #2c3e50;
+				user-select: none;
+				overflow: hidden;
 			}
 
 			.canvas-page__params {
 				grid-area: Params;
-				padding: 1.5rem 1.25rem 1rem 1rem;
-				overflow: auto;
+			}
+
+			.canvas-page__params > * {
 				background: linear-gradient(180deg, #202a34, #17212b);
 				color: #fff;
+				height: 100%;
+				overflow: hidden auto;
+			}
+
+			@media (min-width: 800px) {
+				.canvas-page {
+					grid-template-areas: 'Params Canvas';
+					grid-template-columns: 20rem auto;
+					grid-template-rows: 1fr;
+				}
+
+				.canvas-page__params > * {
+					overflow: auto;
+				}
 			}
 		</style>
 	</head>

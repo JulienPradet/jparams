@@ -13,6 +13,7 @@
 	import { CanvasSketchUtilRandom } from 'canvas-sketch-util/random';
 	import { createEventDispatcher, tick, beforeUpdate } from 'svelte';
 	import debounce from '../util/debounce';
+	import { throttle } from '../util/throttle';
 	import { componentsMap, InputComponent, InputComponents } from './componentsMap';
 	import {
 		Params,
@@ -28,8 +29,7 @@
 	import { setOpenContext } from './openContext';
 	import { setRandomContext } from './randomContext';
 
-	type T = $$Generic;
-	type ActualParamsDefinition = T extends ParamsDefinition ? T : never;
+	type ActualParamsDefinition = $$Generic<ParamsDefinition>;
 	type ActualParams = Params<ActualParamsDefinition>;
 
 	export let params: ActualParams;
@@ -37,6 +37,7 @@
 	export let storage: Storage;
 
 	let form: HTMLFormElement;
+	let opened = false;
 
 	setRandomContext(random);
 	const lockContext = setLockContext(storage.getInitialLockState, storage.onLockUpdate);
@@ -92,14 +93,14 @@
 		init: FormData;
 	}>();
 
-	const onUpdate = debounce(function onUpdate() {
+	const onUpdate = throttle(function onUpdate() {
 		if (!form || isFirstUpdate) {
 			return;
 		}
 
 		const data = new FormData(form);
 		dispatch('change', data);
-	}, 100);
+	}, 30);
 
 	let isFirstUpdate = true;
 	let inputsReady: { [key in keyof ActualParams]: boolean | undefined } = {} as {
@@ -126,7 +127,7 @@
 		}
 	}
 
-	async function onResetAll() {
+	export async function onResetAll() {
 		const keys = getKeysFromParams(params);
 		const unlockedKeys = keys.filter((key) => !lockContext.isLockedKey(key));
 		if (unlockedKeys.length === 0) {
@@ -146,12 +147,21 @@
 	});
 </script>
 
-<div class="params">
+<div class={`params ${opened ? '' : 'closed'}`}>
 	<header>
 		<h1>Configure params</h1>
+
+		<button
+			class="toggle"
+			on:click={() => (opened = !opened)}
+			title={opened ? 'Close' : 'Open'}
+			aria-label={opened ? 'Close' : 'Open'}
+		/>
 	</header>
 
-	<button class="reset-all" type="button" on:click={onResetAll}>Reset all parameters</button>
+	<div class="actions">
+		<button class="reset-all" type="button" on:click={onResetAll}>Reset all parameters</button>
+	</div>
 
 	<form method="get" action="." data-testid="form-params" bind:this={form}>
 		{#each getEntries(params) as { name, label, param, component }}
@@ -167,16 +177,92 @@
 </div>
 
 <style>
-	h1 {
-		margin-top: 0;
-		margin-bottom: 2rem;
-		font-weight: normal;
+	.params {
+		position: relative;
+		--padding-left: 1rem;
+		--padding-right: 1.25rem;
+		padding: 0 var(--padding-right) 4rem var(--padding-left);
 	}
 
-	:global(button) {
-		color: currentColor;
-		font-size: inherit;
-		font-family: inherit;
+	@media (max-width: 799px) {
+		.params {
+			max-height: 55vh;
+		}
+		.params.closed {
+			height: 3.75rem;
+			max-height: 100%;
+			padding-bottom: 0;
+		}
+	}
+
+	header {
+		position: sticky;
+		top: 0;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1rem var(--padding-right) 1rem var(--padding-left);
+		margin-left: calc(-1 * var(--padding-left));
+		margin-right: calc(-1 * var(--padding-right));
+		background: #202a34;
+		z-index: 2;
+	}
+	h1 {
+		margin-top: 0;
+		margin-bottom: 0;
+		font-weight: normal;
+		font-size: 1.3rem;
+	}
+	@media (min-width: 800px) {
+		.header {
+			padding-top: 1.5rem;
+		}
+		h1 {
+			font-size: 1.5rem;
+		}
+	}
+	.toggle {
+		position: relative;
+		background: none;
+		border: none;
+		cursor: pointer;
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.toggle::before,
+	.toggle::after {
+		content: '';
+		position: absolute;
+		top: 50%;
+		transform: translateY(-50%);
+		left: 0;
+		height: 2px;
+		width: 0.5rem;
+		background: #fff;
+		transition: transform 0.3s cubic-bezier(1, 0, 0, 1);
+		margin: 0 0.25rem;
+		border-radius: 2px;
+	}
+
+	.params.closed .toggle::after {
+		transform: translateY(-50%) rotate(90deg);
+	}
+
+	@media (max-width: 799px) {
+		.params.closed header ~ * {
+			display: none;
+		}
+	}
+
+	@media (min-width: 800px) {
+		.toggle {
+			display: none;
+		}
+	}
+
+	.actions {
+		margin-top: 0rem;
 	}
 
 	.reset-all {
@@ -184,27 +270,12 @@
 		border: 1px solid #fff;
 		padding: 0.5rem 1rem;
 		cursor: pointer;
+		border-radius: 2px;
 	}
 
 	form {
-		margin-top: 1rem;
-	}
-
-	/**
-    * Visually hide an element, but leave it available for screen readers
-    * @link https://github.com/h5bp/html5-boilerplate/blob/49b7a124699d719b6bd5f0655225e7e8f471da3e/dist/css/style.css#L109
-    * @link http://snook.ca/archives/html_and_css/hiding-content-for-accessibility
-    */
-	.params :global(.screen-reader) {
-		appearance: none;
-		border: 0;
-		clip: rect(0 0 0 0);
-		height: 1px;
-		margin: -1px;
-		overflow: hidden;
-		padding: 0;
-		position: absolute;
-		white-space: nowrap;
-		width: 1px;
+		position: relative;
+		z-index: 0;
+		margin-top: 1.5rem;
 	}
 </style>
