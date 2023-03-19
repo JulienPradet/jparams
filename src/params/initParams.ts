@@ -121,7 +121,7 @@ export const initParams = <Definition extends ParamsDefinition>({
 	});
 
 	window.addEventListener('click', (event) => {
-		if (event.target && !paramsContainer.contains(event.target)) {
+		if (event.target && !paramsContainer.contains(event.target as Node)) {
 			paramsComponent.onResetAll();
 		}
 	});
