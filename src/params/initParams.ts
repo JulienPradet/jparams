@@ -104,6 +104,7 @@ export const initParams = <Definition extends ParamsDefinition>({
 			new URL(window.location.href)
 		);
 		paramsComponent.$set({ params: initializedParams });
+		updateListeners.forEach((listener) => listener());
 	});
 
 	window.addEventListener('keydown', (event) => {
@@ -120,12 +121,6 @@ export const initParams = <Definition extends ParamsDefinition>({
 		}
 	});
 
-	window.addEventListener('click', (event) => {
-		if (event.target && !paramsContainer.contains(event.target as Node)) {
-			paramsComponent.onResetAll();
-		}
-	});
-
 	/* Using a proxy to enable hotreload */
 	return new Proxy(
 		{
@@ -134,12 +129,17 @@ export const initParams = <Definition extends ParamsDefinition>({
 				return () => {
 					updateListeners = updateListeners.filter((item) => item !== listener);
 				};
-			}
+			},
+			container: paramsComponent.container
 		},
 		{
 			get: (target, key: string) => {
 				if (key === 'onUpdate') {
 					return target.onUpdate;
+				}
+
+				if (key === 'container') {
+					return target.container;
 				}
 
 				if (!(key in initializedParams)) {
@@ -156,6 +156,7 @@ export const initParams = <Definition extends ParamsDefinition>({
 	) as {
 		[Key in keyof Params<Definition>]: Params<Definition>[Key]['value'];
 	} & {
+		container: HTMLElement;
 		onUpdate: (listener: () => void) => () => void;
 	};
 };

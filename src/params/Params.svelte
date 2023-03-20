@@ -12,7 +12,6 @@
 <script lang="ts">
 	import { CanvasSketchUtilRandom } from 'canvas-sketch-util/random';
 	import { createEventDispatcher, tick, beforeUpdate } from 'svelte';
-	import debounce from '../util/debounce';
 	import { throttle } from '../util/throttle';
 	import { componentsMap, InputComponent, InputComponents } from './componentsMap';
 	import {
@@ -36,8 +35,10 @@
 	export let random: CanvasSketchUtilRandom;
 	export let storage: Storage;
 
+	export let container: HTMLElement | null = null;
+
 	let form: HTMLFormElement;
-	let opened = false;
+	let opened = window.matchMedia('(min-width: 800px)').matches ? true : false;
 
 	let isFirstUpdate = true;
 	let inputsReady: { [key in keyof ActualParams]: boolean | undefined } = {} as {
@@ -149,51 +150,192 @@
 	}
 </script>
 
-<div class={`params ${opened ? '' : 'closed'}`}>
-	<header>
-		<h1>Configure params</h1>
-
+<div class={`canvas-page ${opened ? '' : 'closed'}`}>
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<div class="canvas-page__canvas" bind:this={container} on:click={onResetAll} />
+	<aside class="canvas-page__params">
 		<button
 			class="toggle"
 			on:click={() => (opened = !opened)}
 			title={opened ? 'Close' : 'Open'}
 			aria-label={opened ? 'Close' : 'Open'}
 		/>
-	</header>
+		<div class="params">
+			<header>
+				<h1>Configure params</h1>
+			</header>
 
-	<div class="actions">
-		<button class="reset-all" type="button" on:click={onResetAll}>Reset all parameters</button>
-	</div>
+			<div class="actions">
+				<button class="reset-all" type="button" on:click={onResetAll}>Reset all parameters</button>
+			</div>
 
-	<form method="get" action="." data-testid="form-params" bind:this={form}>
-		{#each getEntries(params) as { name, label, param, component }}
-			{#await component}
-				<!-- <p>Loading...</p> -->
-			{:then component}
-				<InputRenderer {name} {label} {param} {component} on:ready={onReady} on:update={onUpdate} />
-			{:catch error}
-				{@debug error}
-			{/await}
-		{/each}
-	</form>
+			<form method="get" action="." data-testid="form-params" bind:this={form}>
+				{#each getEntries(params) as { name, label, param, component }}
+					{#await component}
+						<!-- <p>Loading...</p> -->
+					{:then component}
+						<InputRenderer
+							{name}
+							{label}
+							{param}
+							{component}
+							on:ready={onReady}
+							on:update={onUpdate}
+						/>
+					{:catch error}
+						{@debug error}
+					{/await}
+				{/each}
+			</form>
+		</div>
+	</aside>
 </div>
 
 <style>
+	.canvas-page {
+		display: grid;
+		height: 100vh;
+		max-height: 100vh;
+		max-height: 100dvh;
+		width: 100vw;
+		overflow: hidden;
+		transition: grid-template-rows 0.3s ease-in-out, grid-template-columns 0.3s ease-in-out;
+	}
+
+	.canvas-page__canvas {
+		grid-area: Canvas;
+		max-width: 100vw;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		color: #2c3e50;
+		user-select: none;
+		overflow: hidden;
+	}
+
+	.canvas-page__params {
+		position: relative;
+		grid-area: Params;
+	}
+
+	.canvas-page__canvas > :global(*) {
+		display: block;
+		max-width: 100%;
+		max-height: 100%;
+		width: 100%;
+		height: auto;
+		transform: none !important;
+	}
+
 	.params {
 		position: relative;
+		overflow: auto;
 		--padding-left: 1rem;
 		--padding-right: 1.25rem;
+		color: #fff;
 		padding: 0 var(--padding-right) 4rem var(--padding-left);
+		background: linear-gradient(180deg, #202a34, #17212b);
+		opacity: 1;
+		transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+	}
+
+	.closed .params {
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.toggle {
+		position: absolute;
+		top: -2rem;
+		height: 2rem;
+		left: 0;
+		right: 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+	}
+
+	.toggle::before {
+		content: '';
+		position: absolute;
+		top: 1rem;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		height: 4px;
+		width: 4rem;
+		background: #202a34;
+		transition: transform 0.3s cubic-bezier(1, 0, 0, 1);
+		margin: 0;
+		border-radius: 2px;
 	}
 
 	@media (max-width: 799px) {
-		.params {
-			max-height: 55vh;
+		.canvas-page {
+			grid-template-columns: 1fr;
+			grid-template-rows: 1fr 55vh;
+			grid-template-areas:
+				'Canvas'
+				'Params';
+			transition: grid-template-rows 0.3s ease-in-out;
 		}
-		.params.closed {
-			height: 3.75rem;
-			max-height: 100%;
-			padding-bottom: 0;
+
+		.closed.canvas-page {
+			grid-template-rows: 1fr 0;
+		}
+		.params {
+			height: 55vh;
+		}
+		.closed .params {
+			transform: translateY(100%);
+		}
+	}
+
+	@media (min-width: 800px) {
+		.canvas-page {
+			grid-template-areas: 'Params Canvas';
+			grid-template-columns: 20rem 1fr;
+			grid-template-rows: 1fr;
+			transition: grid-template-columns 0.3s ease-in-out;
+		}
+
+		.canvas-page.closed {
+			grid-template-columns: 0 1fr;
+		}
+
+		.canvas-page__params {
+			width: 20rem;
+		}
+
+		.params {
+			height: 100%;
+			width: 20rem;
+		}
+
+		.closed .params {
+			transform: translateX(-50%);
+		}
+
+		.toggle {
+			top: 0;
+			bottom: 0;
+			left: auto;
+			right: -2rem;
+			width: 2rem;
+			height: 100%;
+			transition: right 0.2s ease-in-out;
+		}
+
+		.toggle::before {
+			height: 4rem;
+			width: 4px;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+		}
+
+		.closed .toggle {
+			right: calc(100% - 2rem);
 		}
 	}
 
@@ -221,47 +363,6 @@
 		}
 		h1 {
 			font-size: 1.5rem;
-		}
-	}
-	.toggle {
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: none;
-		border: none;
-		cursor: pointer;
-	}
-
-	.toggle::before,
-	.toggle::after {
-		content: '';
-		position: absolute;
-		top: 50%;
-		transform: translateY(-50%);
-		right: 1rem;
-		height: 2px;
-		width: 0.5rem;
-		background: #fff;
-		transition: transform 0.3s cubic-bezier(1, 0, 0, 1);
-		margin: 0 0.25rem;
-		border-radius: 2px;
-	}
-
-	.params.closed .toggle::after {
-		transform: translateY(-50%) rotate(90deg);
-	}
-
-	@media (max-width: 799px) {
-		.params.closed header ~ * {
-			display: none;
-		}
-	}
-
-	@media (min-width: 800px) {
-		.toggle {
-			display: none;
 		}
 	}
 

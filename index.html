@@ -61,82 +61,16 @@
 				justify-content: center;
 				align-items: center;
 				height: 100vh;
+				height: 100dvh;
 				background: #fff;
 				font-family: Ovo, serif;
 				-webkit-font-smoothing: antialiased;
 				-moz-osx-font-smoothing: grayscale;
 			}
-
-			#container {
-				max-width: calc(100vw);
-				max-height: calc(100vh);
-				height: auto !important;
-				width: auto !important;
-				display: flex;
-				justify-content: center;
-				align-items: center;
-			}
-
-			canvas,
-			svg {
-				display: block;
-				max-width: 100%;
-				max-height: 100%;
-				width: 100%;
-				height: auto;
-				transform: none !important;
-			}
-
-			.canvas-page {
-				display: grid;
-				grid-template-columns: 1fr;
-				grid-template-rows: 1fr minmax(3.75rem, auto);
-				grid-template-areas:
-					'Canvas'
-					'Params';
-				height: 100%;
-				width: 100%;
-				transition: grid-template-rows 0.2s ease-in-out;
-			}
-
-			.canvas-page__canvas {
-				height: 100%;
-				grid-area: Canvas;
-				text-align: center;
-				color: #2c3e50;
-				user-select: none;
-				overflow: hidden;
-			}
-
-			.canvas-page__params {
-				grid-area: Params;
-			}
-
-			.canvas-page__params > * {
-				background: linear-gradient(180deg, #202a34, #17212b);
-				color: #fff;
-				height: 100%;
-				overflow: hidden auto;
-			}
-
-			@media (min-width: 800px) {
-				.canvas-page {
-					grid-template-areas: 'Params Canvas';
-					grid-template-columns: 20rem auto;
-					grid-template-rows: 1fr;
-				}
-
-				.canvas-page__params > * {
-					overflow: auto;
-				}
-			}
 		</style>
 	</head>
 	<body>
-		<div class="canvas-page">
-			<div id="container" class="canvas-page__canvas">Hey</div>
-			<aside id="params" class="canvas-page__params"></aside>
-		</div>
+		<div id="container"></div>
 		<script type="module" src="/src/index.ts" async></script>
 	</body>
 </html>

@@ -5,7 +5,7 @@ import { hex } from './color/hex';
 
 const random = createRandom();
 
-const paramsContainer = document.querySelector('#params');
+const paramsContainer = document.querySelector('#container');
 
 if (!paramsContainer) {
 	throw new Error('Invalid');
@@ -30,13 +30,8 @@ const params = initParams({
 	random
 });
 
-const container = document.querySelector('#container');
-if (!container) {
-	throw new Error('No container found to draw.');
-}
-
 const draw = () => {
-	container.innerHTML = `
+	params.container.innerHTML = `
         <svg viewbox="0 0 150 150">
             <rect  x="0" y="0" width="150" height="150" fill="${hex(params.background)}" />
             <circle cx="75" cy="75" r="${params.size * 75}" fill="${hex(params.forground)}" />
