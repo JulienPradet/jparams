@@ -35,6 +35,7 @@ describe('Params.svelte', () => {
 			getInitialOpenState: vi.fn((name: string) => true),
 			onOpenUpdate: vi.fn((name: string, value: boolean) => {})
 		};
+		window.matchMedia = vi.fn(() => ({ matches: true }));
 	});
 
 	it('should render an int parameter', async () => {
@@ -169,7 +170,7 @@ describe('Params.svelte', () => {
 			expect(textarea.closest('form')).toHaveFormValues({ name: '0.5' });
 		});
 
-		it('should trigger a change event upon reset all click', async () => {
+		it('should trigger a init event upon reset all click', async () => {
 			const user = userEvent.setup();
 			const random = createRandom();
 
@@ -191,18 +192,18 @@ describe('Params.svelte', () => {
 
 			random.value = vi.fn(() => 0.2);
 
-			const changeMock = vi.fn();
-			component.$on('change', changeMock);
-
 			await screen.findByLabelText('Name');
+
+			const initMock = vi.fn();
+			component.$on('init', initMock);
 
 			await user.click(await screen.findByText('Reset all parameters'));
 
 			await sleep(100);
 
-			expect(changeMock).toHaveBeenCalledOnce();
+			expect(initMock).toHaveBeenCalledOnce();
 
-			const formData: FormData = changeMock.mock.calls[0][0].detail;
+			const formData: FormData = initMock.mock.calls[0][0].detail;
 			const data = extractFormData(formData);
 
 			expect(data).toEqual({
@@ -210,7 +211,7 @@ describe('Params.svelte', () => {
 			});
 		});
 
-		it('should not trigger any change if all parameters are locked when clicking on reset all', async () => {
+		it('should not trigger any change/init if all parameters are locked when clicking on reset all', async () => {
 			const user = userEvent.setup();
 			const random = createRandom();
 
@@ -235,15 +236,16 @@ describe('Params.svelte', () => {
 
 			random.value = vi.fn(() => 0.2);
 
-			const changeMock = vi.fn();
-			component.$on('change', changeMock);
+			const initMock = vi.fn();
+			component.$on('init', initMock);
+			component.$on('change', initMock);
 
 			await user.click(await screen.findByText('Reset all parameters'));
 
 			await sleep(100);
 
 			expect(random.value).not.toHaveBeenCalled();
-			expect(changeMock).not.toHaveBeenCalled();
+			expect(initMock).not.toHaveBeenCalled();
 
 			const formData = new FormData(input.closest('form') || undefined);
 			const data = extractFormData(formData);
@@ -253,7 +255,7 @@ describe('Params.svelte', () => {
 			});
 		});
 
-		it('should  trigger if at least one parameter is not locked', async () => {
+		it('should trigger an init event if at least one parameter is not locked', async () => {
 			const user = userEvent.setup();
 			const random = createRandom();
 
@@ -285,16 +287,16 @@ describe('Params.svelte', () => {
 
 			random.value = vi.fn(() => 0.2);
 
-			const changeMock = vi.fn();
-			component.$on('change', changeMock);
+			const initMock = vi.fn();
+			component.$on('init', initMock);
 
 			await user.click(await screen.findByText('Reset all parameters'));
 
 			await sleep(100);
 
-			expect(changeMock).toHaveBeenCalled();
+			expect(initMock).toHaveBeenCalled();
 
-			const formData: FormData = changeMock.mock.calls[0][0].detail;
+			const formData: FormData = initMock.mock.calls[0][0].detail;
 			const data = extractFormData(formData);
 
 			expect(data).toEqual({

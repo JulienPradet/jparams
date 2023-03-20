@@ -108,7 +108,6 @@ export const initParams = <Definition extends ParamsDefinition>({
 	});
 
 	window.addEventListener('keydown', (event) => {
-		console.log(event);
 		if (event.key.toLowerCase() === 'z' && (event.metaKey || event.ctrlKey)) {
 			event.preventDefault();
 			if (event.shiftKey) {
